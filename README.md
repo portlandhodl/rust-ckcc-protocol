@@ -1,10 +1,12 @@
 # ckcc — Coldcard CLI and Rust Library
 
-Coldcard is an affordable, ultra-secure and open-source hardware wallet for Bitcoin.
-Learn more at [coldcard.com](https://coldcard.com).
+⚠️ This Application + Library is not official Coinkite Software ⚠️
 
 This is the **Rust** implementation of the Coldcard USB protocol library and CLI tool,
 ported from the original [Python ckcc-protocol](https://github.com/Coldcard/ckcc-protocol).
+
+Coldcard is an affordable, ultra-secure and open-source hardware wallet for Bitcoin.
+Learn more at [coldcard.com](https://coldcard.com).
 
 ## Features
 
