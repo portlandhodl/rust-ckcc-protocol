@@ -1,6 +1,6 @@
 [package]
 name = "ckcc"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Coinkite Inc. <support@coinkite.com>"]
 description = "Coldcard USB protocol library and CLI — communicate with your Coldcard hardware wallet"
