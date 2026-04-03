@@ -77,12 +77,7 @@ pub fn multisig_find_target(
     match results.len() {
         0 => anyhow::bail!("Found 0 keystores."),
         1 => Ok(results.into_iter().next().unwrap()),
-        n => anyhow::bail!(
-            "Found {} keystores.{}:{} is ambiguous",
-            n,
-            key,
-            value
-        ),
+        n => anyhow::bail!("Found {} keystores.{}:{} is ambiguous", n, key, value),
     }
 }
 
@@ -92,10 +87,7 @@ pub fn multisig_find_target(
 pub fn filepath_append_cc(f_path: &str) -> String {
     let path = Path::new(f_path);
     let parent = path.parent().unwrap_or_else(|| Path::new(""));
-    let stem = path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
+    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let ext = path.extension().and_then(|s| s.to_str());
 
     let new_name = if let Some(ext) = ext {
@@ -239,7 +231,7 @@ pub fn convert2cc(
                     master_xpub,
                 )?;
             }
-            (Some(k), Some(v), _, ) => {
+            (Some(k), Some(v), _) => {
                 cc_adjust_multisig_hww_keystore(
                     &mut wallet,
                     k,
@@ -274,7 +266,11 @@ mod tests {
         let invalid = vec!["a2of3", "2ofo3", "2of3a", "aaa", "x", "of"];
         for v in invalid {
             let wallet = serde_json::json!({"wallet_type": v});
-            assert!(!is_multisig_wallet(&wallet), "should not be multisig: {}", v);
+            assert!(
+                !is_multisig_wallet(&wallet),
+                "should not be multisig: {}",
+                v
+            );
         }
     }
 

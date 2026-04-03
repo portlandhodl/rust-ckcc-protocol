@@ -4,12 +4,12 @@
 //
 // Communicate with your Coldcard hardware wallet over USB.
 
+pub mod client;
 pub mod constants;
+pub mod electrum;
 pub mod protocol;
 pub mod sigheader;
 pub mod utils;
-pub mod client;
-pub mod electrum;
 
 /// Library version.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

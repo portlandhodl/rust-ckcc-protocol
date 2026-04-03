@@ -76,10 +76,7 @@ const B58_DIGITS: &str = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuv
 ///
 /// Adapted from python-bitcoinlib.
 pub fn decode_xpub(s: &str) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
-    anyhow::ensure!(
-        s.len() > 4 && &s[1..4] == "pub",
-        "Not an xpub string"
-    );
+    anyhow::ensure!(s.len() > 4 && &s[1..4] == "pub", "Not an xpub string");
 
     // Convert base58 string to a big integer (as bytes)
     let mut n = vec![0u8]; // start with zero
@@ -127,8 +124,8 @@ pub fn decode_xpub(s: &str) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
 /// Decompress a SEC1 compressed public key (33 bytes) to uncompressed (64 bytes, no prefix).
 pub fn get_pubkey_string(b: &[u8]) -> anyhow::Result<Vec<u8>> {
     use num_bigint::BigUint;
-    use num_traits::One;
     use num_integer::Integer;
+    use num_traits::One;
 
     anyhow::ensure!(b.len() == 33, "Expected 33-byte compressed pubkey");
 
@@ -240,7 +237,11 @@ pub fn addr_fmt_help(
     taproot: bool,
 ) -> (u32, String) {
     let chain = if let Some(xpub) = master_xpub {
-        if xpub.starts_with('t') { 1 } else { 0 }
+        if xpub.starts_with('t') {
+            1
+        } else {
+            0
+        }
     } else {
         0
     };
@@ -411,8 +412,8 @@ mod tests {
         let result = str_to_int_path("AABBCCDD", "m/44'/0'/0'").unwrap();
         assert_eq!(result.len(), 4); // xfp + 3 components
         assert_eq!(result[1], 44 | 0x8000_0000);
-        assert_eq!(result[2], 0 | 0x8000_0000);
-        assert_eq!(result[3], 0 | 0x8000_0000);
+        assert_eq!(result[2], 0x8000_0000);
+        assert_eq!(result[3], 0x8000_0000);
     }
 
     #[test]

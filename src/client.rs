@@ -58,10 +58,7 @@ impl HidTransport {
                 continue;
             }
 
-            let found_serial = info
-                .serial_number()
-                .unwrap_or("")
-                .to_string();
+            let found_serial = info.serial_number().unwrap_or("").to_string();
 
             if let Some(sn) = serial {
                 if sn != found_serial {
@@ -133,10 +130,7 @@ impl SimulatorTransport {
 
         let path = socket_path.unwrap_or(DEFAULT_SIM_SOCKET);
         // Bind to a client-side path
-        let client_path = format!(
-            "/tmp/ckcc-client-{}-rust.sock",
-            std::process::id()
-        );
+        let client_path = format!("/tmp/ckcc-client-{}-rust.sock", std::process::id());
 
         // Remove stale socket if it exists
         let _ = std::fs::remove_file(&client_path);
@@ -230,7 +224,7 @@ impl ColdcardDevice {
         is_simulator: bool,
     ) -> Result<Self> {
         let (transport, found_serial, sim): (Box<dyn ColdcardTransport>, String, bool) =
-            if is_simulator || serial.map_or(false, |s| s.contains('/')) {
+            if is_simulator || serial.is_some_and(|s| s.contains('/')) {
                 let t = SimulatorTransport::open(serial)?;
                 let sn = t.get_serial_number();
                 (Box::new(t), sn, true)
@@ -420,8 +414,7 @@ impl ColdcardDevice {
         let his_pubkey = PublicKey::from_sec1_bytes(&his_full_pubkey)
             .map_err(|e| CCError::Other(format!("Invalid device pubkey: {}", e)))?;
 
-        let shared_point = my_secret
-            .diffie_hellman(&his_pubkey);
+        let shared_point = my_secret.diffie_hellman(&his_pubkey);
 
         // Session key is SHA256 of the shared point (raw bytes)
         let raw_bytes = shared_point.raw_secret_bytes();
@@ -550,9 +543,7 @@ impl ColdcardDevice {
             match resp {
                 CCResponse::Binary(rb) => {
                     if rb != chk {
-                        return Err(CCError::Other(
-                            "Checksum wrong during file upload".into(),
-                        ));
+                        return Err(CCError::Other("Checksum wrong during file upload".into()));
                     }
                 }
                 _ => return Err(CCError::Other("Unexpected sha256 response".into())),
@@ -595,9 +586,7 @@ impl ColdcardDevice {
 
         let digest: [u8; 32] = hasher.finalize().into();
         if &digest != checksum {
-            return Err(CCError::Other(
-                "Checksum wrong during file download".into(),
-            ));
+            return Err(CCError::Other("Checksum wrong during file download".into()));
         }
 
         Ok(data)
@@ -656,8 +645,8 @@ impl ColdcardDevice {
 ///
 /// Returns a vector of `(serial_number, path)` tuples.
 pub fn list_devices() -> Result<Vec<(String, String)>> {
-    let api = hidapi::HidApi::new()
-        .map_err(|e| CCError::Other(format!("HID API init failed: {}", e)))?;
+    let api =
+        hidapi::HidApi::new().map_err(|e| CCError::Other(format!("HID API init failed: {}", e)))?;
 
     let mut devices = Vec::new();
     for info in api.device_list() {

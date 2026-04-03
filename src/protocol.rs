@@ -61,15 +61,9 @@ pub enum CCResponse {
         xpub: Vec<u8>,
     },
     /// Message signing result: (address, signature_65_bytes).
-    SignedMessage {
-        address: String,
-        signature: Vec<u8>,
-    },
+    SignedMessage { address: String, signature: Vec<u8> },
     /// Transaction signing result: (length, sha256).
-    SignedTxn {
-        length: u32,
-        sha256: [u8; 32],
-    },
+    SignedTxn { length: u32, sha256: [u8; 32] },
 }
 
 // ─── Protocol Packer ───────────────────────────────────────────────────────────
@@ -261,10 +255,7 @@ impl CCProtocolPacker {
 
     /// Delete registered miniscript wallet by name.
     pub fn miniscript_delete(name: &str) -> Vec<u8> {
-        assert!(
-            (2..=40).contains(&name.len()),
-            "name len must be 2..=40"
-        );
+        assert!((2..=40).contains(&name.len()), "name len must be 2..=40");
         let mut buf = b"msdl".to_vec();
         buf.extend_from_slice(name.as_bytes());
         buf
@@ -272,10 +263,7 @@ impl CCProtocolPacker {
 
     /// Get registered miniscript wallet object by name.
     pub fn miniscript_get(name: &str) -> Vec<u8> {
-        assert!(
-            (2..=40).contains(&name.len()),
-            "name len must be 2..=40"
-        );
+        assert!((2..=40).contains(&name.len()), "name len must be 2..=40");
         let mut buf = b"msgt".to_vec();
         buf.extend_from_slice(name.as_bytes());
         buf
@@ -283,10 +271,7 @@ impl CCProtocolPacker {
 
     /// Get BIP-388 policy of registered miniscript wallet object by name.
     pub fn miniscript_policy(name: &str) -> Vec<u8> {
-        assert!(
-            (2..=40).contains(&name.len()),
-            "name len must be 2..=40"
-        );
+        assert!((2..=40).contains(&name.len()), "name len must be 2..=40");
         let mut buf = b"mspl".to_vec();
         buf.extend_from_slice(name.as_bytes());
         buf
@@ -294,10 +279,7 @@ impl CCProtocolPacker {
 
     /// Get miniscript address from internal or external chain by id.
     pub fn miniscript_address(name: &str, change: bool, idx: u32) -> Vec<u8> {
-        assert!(
-            (2..=40).contains(&name.len()),
-            "name len must be 2..=40"
-        );
+        assert!((2..=40).contains(&name.len()), "name len must be 2..=40");
         assert!(idx < (1 << 31), "child idx out of range");
         let mut buf = b"msas".to_vec();
         buf.extend_from_slice(&(change as u32).to_le_bytes());
@@ -483,7 +465,9 @@ impl CCProtocolUnpacker {
         match sign {
             "okay" => {
                 if msg.len() != 4 {
-                    return Err(CCError::FramingError("okay response should be 4 bytes".into()));
+                    return Err(CCError::FramingError(
+                        "okay response should be 4 bytes".into(),
+                    ));
                 }
                 Ok(CCResponse::Ok)
             }
@@ -566,7 +550,10 @@ impl CCProtocolUnpacker {
                 let ln = u32::from_le_bytes(msg[4..8].try_into().unwrap());
                 let mut sha = [0u8; 32];
                 sha.copy_from_slice(&msg[8..40]);
-                Ok(CCResponse::SignedTxn { length: ln, sha256: sha })
+                Ok(CCResponse::SignedTxn {
+                    length: ln,
+                    sha256: sha,
+                })
             }
             _ => Err(CCError::UnknownResponse(sign.to_string())),
         }

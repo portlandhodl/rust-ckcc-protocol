@@ -12,7 +12,7 @@ use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::time::Duration;
 
-use ckcc::client::{ColdcardDevice, DEFAULT_SIM_SOCKET, list_devices};
+use ckcc::client::{list_devices, ColdcardDevice, DEFAULT_SIM_SOCKET};
 use ckcc::constants::*;
 use ckcc::electrum::{convert2cc, filepath_append_cc};
 use ckcc::protocol::*;
@@ -25,7 +25,11 @@ const BIP44_FIRST: &str = "m/44'/0'/0'/0/0";
 // ─── CLI argument definitions ──────────────────────────────────────────────────
 
 #[derive(Parser)]
-#[command(name = "ckcc", version, about = "Coldcard CLI — communicate with your Coldcard hardware wallet")]
+#[command(
+    name = "ckcc",
+    version,
+    about = "Coldcard CLI — communicate with your Coldcard hardware wallet"
+)]
 struct Cli {
     /// Operate on specific unit (default: first found)
     #[arg(short, long, global = true)]
@@ -439,7 +443,11 @@ fn get_device_optional(cli: &Cli) -> Option<ColdcardDevice> {
 
 // ─── Helper: wait and download ─────────────────────────────────────────────────
 
-fn wait_and_download(dev: &mut ColdcardDevice, req: &[u8], file_number: u32) -> Result<(Vec<u8>, [u8; 32])> {
+fn wait_and_download(
+    dev: &mut ColdcardDevice,
+    req: &[u8],
+    file_number: u32,
+) -> Result<(Vec<u8>, [u8; 32])> {
     eprint!("Waiting for OK on the Coldcard...");
 
     loop {
@@ -521,7 +529,7 @@ fn real_file_upload(
             if rb.as_slice() != expect.as_slice() {
                 bail!(
                     "Wrong checksum:\nexpect: {}\n   got: {}",
-                    hex::encode(&expect),
+                    hex::encode(expect),
                     hex::encode(&rb)
                 );
             }
@@ -649,12 +657,8 @@ fn main() -> Result<()> {
             quiet,
         } => {
             let mut dev = get_device(&cli)?;
-            let (addr_fmt, af_path) = addr_fmt_help(
-                dev.master_xpub.as_deref(),
-                *wrap,
-                *segwit,
-                *taproot,
-            );
+            let (addr_fmt, af_path) =
+                addr_fmt_help(dev.master_xpub.as_deref(), *wrap, *segwit, *taproot);
             let use_path = path.as_deref().unwrap_or(&af_path);
 
             let resp = dev.send_recv(
@@ -683,12 +687,8 @@ fn main() -> Result<()> {
             wrap,
         } => {
             let mut dev = get_device(&cli)?;
-            let (addr_fmt, af_path) = addr_fmt_help(
-                dev.master_xpub.as_deref(),
-                *wrap,
-                *segwit,
-                false,
-            );
+            let (addr_fmt, af_path) =
+                addr_fmt_help(dev.master_xpub.as_deref(), *wrap, *segwit, false);
             let signing_path = path.as_deref().unwrap_or(&af_path);
             let msg_bytes = message.as_bytes();
 
@@ -712,10 +712,7 @@ fn main() -> Result<()> {
                         if *just_sig {
                             println!("{}", sig);
                         } else if *verbose {
-                            println!(
-                                "{}",
-                                format_rfc_signature(message, &address, &sig)
-                            );
+                            println!("{}", format_rfc_signature(message, &address, &sig));
                         } else {
                             println!("{}\n{}\n{}", message, address, sig);
                         }
@@ -876,7 +873,7 @@ fn main() -> Result<()> {
                 "Wrote {} bytes into: {}\nSHA256: {}",
                 result.len(),
                 filename,
-                hex::encode(&chk)
+                hex::encode(chk)
             );
         }
 
@@ -917,7 +914,12 @@ fn main() -> Result<()> {
             miniscript,
             backup,
         } => {
-            if [*multisig, *miniscript, *backup].iter().filter(|&&x| x).count() > 1 {
+            if [*multisig, *miniscript, *backup]
+                .iter()
+                .filter(|&&x| x)
+                .count()
+                > 1
+            {
                 bail!("Only one can be specified from miniscript/multisig/backup");
             }
 
@@ -926,9 +928,17 @@ fn main() -> Result<()> {
             let (file_len, sha) = real_file_upload(&data, &mut dev, *blksize)?;
 
             if *multisig {
-                dev.send_recv(&CCProtocolPacker::multisig_enroll(file_len as u32, &sha), None, None)?;
+                dev.send_recv(
+                    &CCProtocolPacker::multisig_enroll(file_len as u32, &sha),
+                    None,
+                    None,
+                )?;
             } else if *miniscript {
-                dev.send_recv(&CCProtocolPacker::miniscript_enroll(file_len as u32, &sha), None, None)?;
+                dev.send_recv(
+                    &CCProtocolPacker::miniscript_enroll(file_len as u32, &sha),
+                    None,
+                    None,
+                )?;
             } else if *backup {
                 dev.send_recv(
                     &CCProtocolPacker::restore_backup(file_len as u32, &sha, false, false, false),
@@ -1027,11 +1037,7 @@ fn main() -> Result<()> {
             let mut dev = get_device(&cli)?;
             dev.check_mitm(None)?;
 
-            dev.send_recv(
-                &CCProtocolPacker::bip39_passphrase(passphrase),
-                None,
-                None,
-            )?;
+            dev.send_recv(&CCProtocolPacker::bip39_passphrase(passphrase), None, None)?;
 
             eprint!("Waiting for OK on the Coldcard...");
 
@@ -1094,7 +1100,10 @@ fn main() -> Result<()> {
                 bail!("N must be 1..15");
             }
             if !(1..=n).contains(&m) {
-                bail!("Minimum number of signers (M) must be between 1 and N={}", n);
+                bail!(
+                    "Minimum number of signers (M) must be between 1 and N={}",
+                    n
+                );
             }
 
             let config = if *descriptor {
@@ -1122,10 +1131,7 @@ fn main() -> Result<()> {
                 );
                 if *num_signers > 1 {
                     for i in 0..(*num_signers - 1) {
-                        config.push_str(&format!(
-                            "#{}# FINGERPRINT: xpub123123123123123\n",
-                            i + 2
-                        ));
+                        config.push_str(&format!("#{}# FINGERPRINT: xpub123123123123123\n", i + 2));
                     }
                 }
                 config
@@ -1331,8 +1337,7 @@ fn main() -> Result<()> {
                 (None, None)
             };
 
-            let wallet_str = fs::read_to_string(file)
-                .context("Failed to read wallet file")?;
+            let wallet_str = fs::read_to_string(file).context("Failed to read wallet file")?;
 
             let new_wallet_str = convert2cc(
                 &wallet_str,
@@ -1345,9 +1350,7 @@ fn main() -> Result<()> {
             if *dry_run {
                 println!("{}", new_wallet_str);
             } else {
-                let out = outfile
-                    .clone()
-                    .unwrap_or_else(|| filepath_append_cc(file));
+                let out = outfile.clone().unwrap_or_else(|| filepath_append_cc(file));
                 fs::write(&out, &new_wallet_str)?;
                 println!("New wallet file created: {}", out);
             }
