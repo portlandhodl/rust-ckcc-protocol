@@ -12,7 +12,6 @@ use crate::utils::{decode_xpub, get_pubkey_string};
 use aes::Aes256;
 use cipher::{KeyIvInit, StreamCipher};
 use k256::{
-    ecdh::EphemeralSecret,
     ecdsa::{signature::Verifier, Signature, VerifyingKey},
     elliptic_curve::sec1::ToEncodedPoint,
     PublicKey,
@@ -384,11 +383,15 @@ impl ColdcardDevice {
 
     /// Set up link-layer encryption using ECDH key exchange.
     pub fn start_encryption(&mut self, version: u32) -> Result<()> {
-        // Generate our ephemeral key pair
-        let my_secret = EphemeralSecret::random(&mut rand::thread_rng());
-        let my_pubkey = my_secret.public_key();
-        let my_pubkey_point = my_pubkey.to_encoded_point(false);
-        let my_pubkey_bytes = &my_pubkey_point.as_bytes()[1..]; // skip 0x04 prefix
+        // Generate our ephemeral key pair using raw scalar multiplication
+        // (matching the Python ecdsa library's behavior)
+        use k256::elliptic_curve::ops::MulByGenerator;
+
+        let my_scalar = k256::NonZeroScalar::random(&mut rand::thread_rng());
+        let my_pubkey_point = k256::ProjectivePoint::mul_by_generator(&my_scalar);
+        let my_pubkey_affine = my_pubkey_point.to_affine();
+        let my_pubkey_encoded = my_pubkey_affine.to_encoded_point(false);
+        let my_pubkey_bytes = &my_pubkey_encoded.as_bytes()[1..]; // skip 0x04 prefix
         assert_eq!(my_pubkey_bytes.len(), 64);
 
         // Send our pubkey to the device
@@ -407,6 +410,9 @@ impl ColdcardDevice {
         self.ncry_ver = version;
 
         // Reconstruct his public key and do ECDH
+        // Python: pt = my_key.privkey.secret_multiplier * his_pubkey.pubkey.point
+        // Then:   kk = number_to_string(pt.x(), order) + number_to_string(pt.y(), order)
+        // Then:   session_key = sha256(kk).digest()
         assert_eq!(his_pubkey_bytes.len(), 64);
         let mut his_full_pubkey = vec![0x04u8]; // uncompressed prefix
         his_full_pubkey.extend_from_slice(&his_pubkey_bytes);
@@ -414,14 +420,19 @@ impl ColdcardDevice {
         let his_pubkey = PublicKey::from_sec1_bytes(&his_full_pubkey)
             .map_err(|e| CCError::Other(format!("Invalid device pubkey: {}", e)))?;
 
-        let shared_point = my_secret.diffie_hellman(&his_pubkey);
+        // Perform scalar multiplication: shared_point = my_scalar * his_pubkey
+        let his_projective = k256::ProjectivePoint::from(*his_pubkey.as_affine());
+        let shared_projective = his_projective * *my_scalar;
+        let shared_affine = shared_projective.to_affine();
 
-        // Session key is SHA256 of the shared point (raw bytes)
-        let raw_bytes = shared_point.raw_secret_bytes();
-        // We need the full point (x,y) for the hash, but k256 ECDH gives us just x.
-        // The Python code hashes x||y. We'll use the shared secret directly via SHA256.
+        // Get the full uncompressed point (x || y) — 64 bytes
+        let shared_encoded = shared_affine.to_encoded_point(false);
+        let shared_xy = &shared_encoded.as_bytes()[1..]; // skip 0x04 prefix
+        assert_eq!(shared_xy.len(), 64);
+
+        // Session key = SHA256(x || y), matching Python's behavior
         let mut hasher = Sha256::new();
-        hasher.update(raw_bytes);
+        hasher.update(shared_xy);
         let session_key: [u8; 32] = hasher.finalize().into();
 
         self.session_key = Some(session_key);

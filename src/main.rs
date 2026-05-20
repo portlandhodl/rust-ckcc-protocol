@@ -71,7 +71,7 @@ enum Commands {
     /// Get the fingerprint for this wallet (master level)
     Xfp {
         /// Reverse endian of result (32-bit)
-        #[arg(short, long)]
+        #[arg(short = 'S', long)]
         swab: bool,
     },
 
@@ -99,7 +99,7 @@ enum Commands {
         path: Option<String>,
 
         /// Show in segwit native (p2wpkh, bech32)
-        #[arg(short, long)]
+        #[arg(short = 'g', long)]
         segwit: bool,
 
         /// Show in taproot (p2tr, bech32m)
@@ -133,7 +133,7 @@ enum Commands {
         just_sig: bool,
 
         /// Address in segwit native (p2wpkh, bech32)
-        #[arg(short, long)]
+        #[arg(short = 'g', long)]
         segwit: bool,
 
         /// Address in segwit wrapped in P2SH (p2sh-p2wpkh)
@@ -249,7 +249,7 @@ enum Commands {
     /// Test USB connection (debug/dev)
     Test {
         /// If set, use this value on wire
-        #[arg(short, long)]
+        #[arg(short = 'S', long)]
         single: Option<u8>,
     },
 
